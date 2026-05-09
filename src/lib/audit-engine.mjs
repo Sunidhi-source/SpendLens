@@ -490,10 +490,13 @@ export function makePublicAuditPayload(audit) {
   };
 }
 
+// ── encode / decode — browser-safe base64url, no Buffer dependency ──────────
+// Buffer is polyfilled in Next.js browser bundles but the polyfill does NOT
+// support the "base64url" encoding string, causing a runtime TypeError.
+// Using btoa/atob + encodeURIComponent works identically in browser and Node.
+
 export function encodeAuditId(payload) {
   const json = JSON.stringify(payload);
-  if (typeof Buffer !== "undefined")
-    return Buffer.from(json).toString("base64url");
   return btoa(unescape(encodeURIComponent(json)))
     .replaceAll("+", "-")
     .replaceAll("/", "_")
@@ -502,12 +505,8 @@ export function encodeAuditId(payload) {
 
 export function decodeAuditId(id) {
   try {
-    const json =
-      typeof Buffer !== "undefined"
-        ? Buffer.from(id, "base64url").toString("utf8")
-        : decodeURIComponent(
-            escape(atob(id.replaceAll("-", "+").replaceAll("_", "/"))),
-          );
+    const padded = id.replaceAll("-", "+").replaceAll("_", "/");
+    const json = decodeURIComponent(escape(atob(padded)));
     return JSON.parse(json);
   } catch {
     return null;

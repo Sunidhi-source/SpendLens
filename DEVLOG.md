@@ -88,3 +88,34 @@ is done. First user interview is booked for tomorrow morning.
 **Plan for tomorrow:**
 Run first user interview. Write PRICING_DATA.md with real verified dates.
 Start filling out the entrepreneurial files (GTM, ECONOMICS).
+
+## Day 4 — 10 may 2026
+
+**Hours worked:** 3
+
+**What I did:**
+Spent the morning on user interview 1 (see USER_INTERVIEWS.md — spoke with
+a seed-stage CTO for 15 minutes over a DM call). His feedback changed one
+thing: I had the Credex CTA using the word "consultation," which he said
+read as "sales call." Changed it to "credit review" — less threatening,
+more specific. Spent the afternoon verifying all vendor pricing pages
+manually, recording exact URLs and dates in PRICING_DATA.md. Also wrote
+GTM.md and ECONOMICS.md from scratch — tried to make the numbers honest
+rather than impressive. If the conversion math doesn't work, it shouldn't
+be hidden.
+
+**What I learned:**
+The user interview was more useful than I expected. The CTO didn't find the
+audit results suspicious — he found the form suspicious. He said "I don't
+know why I'd trust these numbers." That told me I need to be more explicit
+about where the pricing data comes from on the results page. Added a small
+"Pricing sources: official vendor pages, verified YYYY-MM-DD" line to the
+results footer.
+
+**Blockers / what I'm stuck on:**
+Need 2 more user interviews. Going to post a "quick 10-min chat?" ask in
+Indie Hackers and one Slack community tomorrow. Also need to deploy.
+
+**Plan for tomorrow:**
+Deploy to Vercel, wire Supabase in prod, run Lighthouse. Fix anything that
+drops below 85/90/90. Run interview 2.

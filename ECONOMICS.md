@@ -1,0 +1,9 @@
+# Economics
+
+Assumptions are rough, but the model only needs to be directionally honest. Suppose a qualified Credex customer buys $30k/year of discounted AI credits at a 20% gross margin. That makes annual gross profit about $6k. If the average retained customer lasts 1.5 years, gross-profit LTV is about $9k. To stay attractive, Credex should want payback inside three months, so target CAC should be below $1.5k per converted customer and ideally far lower for this organic tool.
+
+Channel CAC from the GTM plan is mostly time. If founder/operator time is valued at $75/hour and week-one distribution takes 20 hours, the first 100 audits cost about $1,500, or $15 per audit. If 25% of audits capture email, cost per captured lead is $60. If 8% of completed audits are high-savings leads, cost per high-savings lead is $187.50. If 25% of high-savings leads book and 40% of booked calls buy credits, CAC per customer is roughly $1,875. That is slightly above the ideal target, but still workable if LTV is $9k and if organic sharing lowers CAC after launch.
+
+The profitable funnel target: 100 completed audits produce 25 emails, 8 high-savings leads, 2 consultations, and 0.8 purchases. At $9k LTV, expected value is $7.2k against $1.5k effort cost. If consultation-to-purchase falls below 20%, the tool needs either stronger qualification or more Credex-specific proof on the results page.
+
+For this to drive $1M ARR in 18 months, Credex would need roughly $83k MRR from credits. At $30k annual credit purchases per customer, that is about 400 active customers. If 10% of high-savings leads become customers, the tool needs 4,000 high-savings leads. If 8% of audits are high-savings, it needs 50,000 completed audits over 18 months, or about 2,800/month. That is plausible only if public audit URLs create a repeatable viral loop and Credex turns anonymized benchmark data into distribution.

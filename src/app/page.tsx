@@ -1,6 +1,14 @@
 "use client";
 
-import { BarChart3, Copy, Plus, Trash2 } from "lucide-react";
+import {
+  BarChart3,
+  Copy,
+  Plus,
+  Trash2,
+  TrendingDown,
+  Shield,
+  Zap,
+} from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { currency } from "@/lib/format";
 import {
@@ -29,22 +37,27 @@ const DEFAULT: FormState = {
   ],
 };
 
+const TOOLS_MAP = TOOLS as Record<
+  string,
+  { label: string; plans: Record<string, unknown> }
+>;
+
 export default function HomePage() {
   const [form, setForm] = useState<FormState>(DEFAULT);
   const [mounted, setMounted] = useState(false);
+  const [origin, setOrigin] = useState("");
 
-  // Load from localStorage only after mount — fixes hydration mismatch
   useEffect(() => {
     setMounted(true);
+    setOrigin(window.location.origin);
     try {
-      const saved = localStorage.getItem("spendlens-form");
-      if (saved) setForm(JSON.parse(saved));
+      const s = localStorage.getItem("spendlens-form");
+      if (s) setForm(JSON.parse(s));
     } catch {
-      /* ignore */
+      /* use default */
     }
   }, []);
 
-  // Persist on change
   useEffect(() => {
     if (mounted) localStorage.setItem("spendlens-form", JSON.stringify(form));
   }, [form, mounted]);
@@ -65,12 +78,6 @@ export default function HomePage() {
     remoteSummary?.key === auditKey
       ? remoteSummary.text
       : fallbackSummary(audit);
-
-  // Build shareUrl only client-side — no SSR mismatch
-  const [origin, setOrigin] = useState("");
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
   const publicId = useMemo(
     () => encodeAuditId(makePublicAuditPayload(audit)),
     [audit],
@@ -79,7 +86,6 @@ export default function HomePage() {
     ? `${origin}/audit/${publicId}`
     : `/audit/${publicId}`;
 
-  // Debounced AI summary
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setSummaryLoading(true);
@@ -116,11 +122,7 @@ export default function HomePage() {
         if (idx !== i) return t;
         const next = { ...t, ...patch };
         if (patch.toolId) {
-          const plans = Object.keys(
-            (TOOLS as Record<string, { plans: Record<string, unknown> }>)[
-              patch.toolId
-            ]?.plans ?? {},
-          );
+          const plans = Object.keys(TOOLS_MAP[patch.toolId]?.plans ?? {});
           next.plan = plans[0] ?? "";
         }
         return next;
@@ -144,21 +146,20 @@ export default function HomePage() {
 
   async function submitLead(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLeadMsg("Saving…");
+    setLeadMsg("Saving...");
     const fd = new FormData(e.currentTarget);
-    const payload = {
-      email: String(fd.get("email") ?? ""),
-      company: String(fd.get("company") ?? ""),
-      role: String(fd.get("role") ?? ""),
-      teamSize: Number(fd.get("teamSize") ?? form.teamSize),
-      website: String(fd.get("website") ?? ""),
-      audit,
-      shareUrl,
-    };
     const res = await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        email: String(fd.get("email") ?? ""),
+        company: String(fd.get("company") ?? ""),
+        role: String(fd.get("role") ?? ""),
+        teamSize: Number(fd.get("teamSize") ?? form.teamSize),
+        website: String(fd.get("website") ?? ""),
+        audit,
+        shareUrl,
+      }),
     });
     const body = await res.json().catch(() => ({}));
     setLeadMsg(
@@ -199,6 +200,8 @@ export default function HomePage() {
   };
 
   const isOptimal = audit.totalMonthlySavings < 100;
+  const BOOKING =
+    process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ?? "https://credex.rocks";
 
   return (
     <main className="shell">
@@ -235,195 +238,208 @@ export default function HomePage() {
         </nav>
       </header>
 
-      {/* ── Hero ── */}
+      {/* ── Hero + Form ── */}
       <section className="hero" id="top">
         <div className="hero-grid">
-          {/* Left — copy */}
-          <div>
+          {/* Left — headline */}
+          <div className="hero-left">
             <p className="eyebrow">Free · No login required</p>
             <h1>
-              Find your hidden AI <em>overspend.</em>
+              Find your
+              <br />
+              hidden AI
+              <br />
+              <em>overspend.</em>
             </h1>
             <p className="lede">
               Enter every AI subscription, seat count, and API invoice. Get an
               instant breakdown of what to cut, downgrade, or reroute — and
               exactly how much you save.
             </p>
+            <div className="trust-stats">
+              <div className="trust-stat">
+                <TrendingDown size={16} className="trust-icon" />
+                <span>15–35% average savings</span>
+              </div>
+              <div className="trust-stat">
+                <Zap size={16} className="trust-icon" />
+                <span>Instant results</span>
+              </div>
+              <div className="trust-stat">
+                <Shield size={16} className="trust-icon" />
+                <span>No login needed</span>
+              </div>
+            </div>
             <div className="hero-points">
-              <span className="point">
-                <span className="point-check" aria-hidden="true">
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path
-                      d="M2 5l2.5 2.5L8 2.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+              {[
+                "Results shown before email is asked",
+                "Shareable public link strips identifying details",
+                "Credex surfaced only when savings exceed $500/mo",
+              ].map((text) => (
+                <span className="point" key={text}>
+                  <span className="point-check" aria-hidden="true">
+                    <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                      <path
+                        d="M1.5 4.5l2 2L7.5 2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  {text}
                 </span>
-                Results shown before email is asked
-              </span>
-              <span className="point">
-                <span className="point-check" aria-hidden="true">
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path
-                      d="M2 5l2.5 2.5L8 2.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-                Shareable public link strips identifying details
-              </span>
-              <span className="point">
-                <span className="point-check" aria-hidden="true">
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path
-                      d="M2 5l2.5 2.5L8 2.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-                Credex only shown when savings exceed $500/mo
-              </span>
+              ))}
             </div>
           </div>
 
-          {/* Right — form */}
-          <form
-            className="panel form-panel"
-            onSubmit={(e) => e.preventDefault()}
-            aria-label="AI stack input"
-          >
-            <div className="form-grid">
-              <div className="field">
-                <label htmlFor="team-size">Team size</label>
-                <input
-                  id="team-size"
-                  type="number"
-                  min={1}
-                  value={form.teamSize}
-                  onChange={(e) =>
-                    setForm({ ...form, teamSize: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="use-case">Primary use case</label>
-                <select
-                  id="use-case"
-                  value={form.useCase}
-                  onChange={(e) =>
-                    setForm({ ...form, useCase: e.target.value })
-                  }
-                >
-                  {(USE_CASES as string[]).map((uc) => (
-                    <option key={uc} value={uc}>
-                      {uc[0].toUpperCase() + uc.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Right — input form */}
+          <div className="form-wrapper">
+            <div className="form-header">
+              <h2 className="form-title">Audit your AI stack</h2>
+              <p className="form-subtitle">
+                Add your tools and get instant savings analysis
+              </p>
             </div>
-
-            {form.tools.map((tool, idx) => {
-              const plans = Object.keys(
-                (TOOLS as Record<string, { plans: Record<string, unknown> }>)[
-                  tool.toolId
-                ]?.plans ?? {},
-              );
-              return (
-                <div className="tool-row" key={`${tool.toolId}-${idx}`}>
-                  <div className="tool-num">Tool {idx + 1}</div>
-                  <div className="field">
-                    <label htmlFor={`tool-${idx}`}>Tool</label>
-                    <select
-                      id={`tool-${idx}`}
-                      value={tool.toolId}
-                      onChange={(e) =>
-                        updateTool(idx, { toolId: e.target.value })
-                      }
-                    >
-                      {Object.entries(
-                        TOOLS as Record<string, { label: string }>,
-                      ).map(([id, v]) => (
-                        <option key={id} value={id}>
-                          {v.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label htmlFor={`plan-${idx}`}>Plan</label>
-                    <select
-                      id={`plan-${idx}`}
-                      value={tool.plan}
-                      onChange={(e) =>
-                        updateTool(idx, { plan: e.target.value })
-                      }
-                    >
-                      {plans.map((p) => (
-                        <option key={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label htmlFor={`spend-${idx}`}>Monthly ($)</label>
-                    <input
-                      id={`spend-${idx}`}
-                      type="number"
-                      min={0}
-                      value={tool.monthlySpend}
-                      onChange={(e) =>
-                        updateTool(idx, {
-                          monthlySpend: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label htmlFor={`seats-${idx}`}>Seats</label>
-                    <input
-                      id={`seats-${idx}`}
-                      type="number"
-                      min={1}
-                      value={tool.seats}
-                      onChange={(e) =>
-                        updateTool(idx, { seats: Number(e.target.value) })
-                      }
-                    />
-                  </div>
-                  <button
-                    className="icon-btn"
-                    type="button"
-                    onClick={() => removeTool(idx)}
-                    aria-label={`Remove ${(TOOLS as Record<string, { label: string }>)[tool.toolId]?.label ?? tool.toolId}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+            <form
+              className="panel form-panel"
+              onSubmit={(e) => e.preventDefault()}
+              aria-label="AI stack input"
+            >
+              {/* Team size + use case */}
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="team-size">Team size</label>
+                  <input
+                    id="team-size"
+                    type="number"
+                    min={1}
+                    value={form.teamSize}
+                    onChange={(e) =>
+                      setForm({ ...form, teamSize: Number(e.target.value) })
+                    }
+                  />
                 </div>
-              );
-            })}
+                <div className="field">
+                  <label htmlFor="use-case">Primary use case</label>
+                  <select
+                    id="use-case"
+                    value={form.useCase}
+                    onChange={(e) =>
+                      setForm({ ...form, useCase: e.target.value })
+                    }
+                  >
+                    {(USE_CASES as string[]).map((uc) => (
+                      <option key={uc} value={uc}>
+                        {uc[0].toUpperCase() + uc.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-            <div className="actions">
-              <button className="secondary" type="button" onClick={addTool}>
-                <Plus size={15} aria-hidden="true" /> Add tool
-              </button>
-              <a
-                className="primary"
-                href="#results"
-                aria-label="Scroll to audit results"
-              >
-                <BarChart3 size={15} aria-hidden="true" /> View audit
-              </a>
-            </div>
-          </form>
+              {/* Divider */}
+              <div className="tools-divider">
+                <span>Your tools</span>
+              </div>
+
+              {/* Tool rows */}
+              <div className="tools-list">
+                {form.tools.map((tool, idx) => {
+                  const plans = Object.keys(
+                    TOOLS_MAP[tool.toolId]?.plans ?? {},
+                  );
+                  return (
+                    <div className="tool-card" key={`${tool.toolId}-${idx}`}>
+                      <div className="tool-card-header">
+                        <span className="tool-num">Tool {idx + 1}</span>
+                        <button
+                          className="icon-btn"
+                          type="button"
+                          onClick={() => removeTool(idx)}
+                          aria-label={`Remove ${TOOLS_MAP[tool.toolId]?.label ?? tool.toolId}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      <div className="tool-fields">
+                        <div className="field field-tool">
+                          <label htmlFor={`tool-${idx}`}>Tool</label>
+                          <select
+                            id={`tool-${idx}`}
+                            value={tool.toolId}
+                            onChange={(e) =>
+                              updateTool(idx, { toolId: e.target.value })
+                            }
+                          >
+                            {Object.entries(TOOLS_MAP).map(([id, v]) => (
+                              <option key={id} value={id}>
+                                {v.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field field-plan">
+                          <label htmlFor={`plan-${idx}`}>Plan</label>
+                          <select
+                            id={`plan-${idx}`}
+                            value={tool.plan}
+                            onChange={(e) =>
+                              updateTool(idx, { plan: e.target.value })
+                            }
+                          >
+                            {plans.map((p) => (
+                              <option key={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field field-spend">
+                          <label htmlFor={`spend-${idx}`}>Monthly ($)</label>
+                          <input
+                            id={`spend-${idx}`}
+                            type="number"
+                            min={0}
+                            value={tool.monthlySpend}
+                            onChange={(e) =>
+                              updateTool(idx, {
+                                monthlySpend: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="field field-seats">
+                          <label htmlFor={`seats-${idx}`}>Seats</label>
+                          <input
+                            id={`seats-${idx}`}
+                            type="number"
+                            min={1}
+                            value={tool.seats}
+                            onChange={(e) =>
+                              updateTool(idx, { seats: Number(e.target.value) })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="actions">
+                <button className="secondary" type="button" onClick={addTool}>
+                  <Plus size={14} aria-hidden="true" /> Add tool
+                </button>
+                <a
+                  className="primary"
+                  href="#results"
+                  aria-label="Scroll to audit results"
+                >
+                  <BarChart3 size={14} aria-hidden="true" /> View audit
+                </a>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -439,22 +455,23 @@ export default function HomePage() {
                   ? "You're spending well."
                   : "Practical savings estimate"}
               </h2>
-              <div className="ai-label" style={{ marginTop: 0 }}>
+              <div className="ai-label" style={{ marginTop: 8 }}>
                 {summaryLoading
-                  ? "Generating analysis…"
+                  ? "Generating analysis..."
                   : remoteSummary?.source && remoteSummary.source !== "fallback"
                     ? `AI analysis · ${remoteSummary.source}`
                     : "Summary"}
               </div>
               <p className="ai-text">
                 {summaryLoading ? (
-                  <span className="pulsing">Analysing your stack…</span>
+                  <span className="pulsing">Analysing your stack...</span>
                 ) : (
                   summary
                 )}
               </p>
             </div>
             <div className="band-right">
+              <p className="savings-label">Monthly savings</p>
               <span
                 className="savings-num"
                 aria-label={`${currency(audit.totalMonthlySavings)} per month potential savings`}
@@ -471,47 +488,44 @@ export default function HomePage() {
           {audit.leadTier === "high" ? (
             <div className="notice-credex" role="alert">
               <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
                 fill="none"
                 aria-hidden="true"
                 style={{ flexShrink: 0 }}
               >
                 <path
-                  d="M9 3L16 15H2L9 3Z"
+                  d="M8 2L14 13H2L8 2Z"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   strokeLinejoin="round"
                 />
                 <line
-                  x1="9"
-                  y1="8"
-                  x2="9"
-                  y2="11"
+                  x1="8"
+                  y1="7"
+                  x2="8"
+                  y2="10"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                 />
-                <circle cx="9" cy="13" r="0.75" fill="currentColor" />
+                <circle cx="8" cy="12" r="0.7" fill="currentColor" />
               </svg>
-              <div style={{ flex: 1 }}>
-                <strong>Credex can capture more of this.</strong> Savings above
-                $500/mo are where discounted AI credits — same tools, 15–35%
-                below retail — make a real difference.
-              </div>
+              <span style={{ flex: 1 }}>
+                <strong>Credex can capture more of this.</strong> Above $500/mo,
+                discounted AI credits — same tools, 15–35% below retail — make a
+                real difference.
+              </span>
               <a
-                href={
-                  process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ??
-                  "https://credex.rocks"
-                }
+                href={BOOKING}
                 target="_blank"
                 rel="noreferrer"
                 className="primary"
                 style={{
-                  fontSize: 13,
-                  height: 36,
-                  padding: "0 14px",
+                  fontSize: 12,
+                  height: 34,
+                  padding: "0 13px",
                   flexShrink: 0,
                 }}
               >
@@ -522,7 +536,7 @@ export default function HomePage() {
             <div className="notice">
               <strong>Honest result:</strong>{" "}
               {isOptimal
-                ? "You're already spending carefully. Check back when your team size or tool mix changes."
+                ? "You are already spending carefully. Check back when your team size or tool mix changes."
                 : "There is a practical savings opportunity from plan right-sizing. No Credex needed at this level — these are free changes."}
             </div>
           )}
@@ -552,12 +566,11 @@ export default function HomePage() {
                 key={`${row.toolId}-${i}`}
                 role="listitem"
                 className={`breakdown-row severity-${row.severity} fade-up`}
-                style={{ animationDelay: `${i * 55}ms` }}
+                style={{ animationDelay: `${i * 50}ms` }}
               >
-                {/* col 1 — tool info */}
-                <div>
+                <div className="breakdown-meta">
                   <div className="tool-header">
-                    <h3 style={{ fontSize: 14 }}>{row.toolLabel}</h3>
+                    <h3>{row.toolLabel}</h3>
                     {badge(row.severity)}
                   </div>
                   <p className="muted small">
@@ -565,15 +578,13 @@ export default function HomePage() {
                     {currency(row.currentMonthly)}/mo
                   </p>
                 </div>
-                {/* col 2 — recommendation */}
-                <div>
+                <div className="breakdown-rec">
                   <p className="row-rec">{row.recommendation}</p>
                   <p className="row-reason">{row.reason}</p>
                 </div>
-                {/* col 3 — savings */}
                 <div className="savings-col">
                   <p
-                    className={`savings-amt ${row.monthlySavings === 0 ? "zero" : ""}`}
+                    className={`savings-amt${row.monthlySavings === 0 ? " zero" : ""}`}
                   >
                     {row.monthlySavings === 0
                       ? "—"
@@ -581,7 +592,7 @@ export default function HomePage() {
                   </p>
                   {row.monthlySavings > 0 && (
                     <p className="savings-rec">
-                      → {currency(row.recommendedMonthly)}/mo
+                      {currency(row.recommendedMonthly)}/mo
                     </p>
                   )}
                 </div>
@@ -592,6 +603,7 @@ export default function HomePage() {
           {/* Share bar */}
           {mounted && (
             <div className="share-row" aria-label="Share your audit">
+              <span className="share-label">Share your audit</span>
               <span className="share-url" title={shareUrl}>
                 {shareUrl}
               </span>
@@ -601,13 +613,13 @@ export default function HomePage() {
                 onClick={copyUrl}
                 aria-label="Copy shareable URL"
                 style={{
-                  height: 34,
-                  padding: "0 12px",
-                  fontSize: 13,
+                  height: 32,
+                  padding: "0 11px",
+                  fontSize: 12,
                   flexShrink: 0,
                 }}
               >
-                <Copy size={13} aria-hidden="true" />
+                <Copy size={12} aria-hidden="true" />
                 {copied ? "Copied!" : "Copy link"}
               </button>
               <a
@@ -616,13 +628,13 @@ export default function HomePage() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  height: 34,
-                  padding: "0 12px",
-                  fontSize: 13,
+                  height: 32,
+                  padding: "0 11px",
+                  fontSize: 12,
                   flexShrink: 0,
                 }}
               >
-                Open →
+                Open
               </a>
             </div>
           )}
@@ -633,21 +645,25 @@ export default function HomePage() {
             onSubmit={submitLead}
             aria-label="Save your audit report"
           >
-            <h3>Save this report</h3>
-            <p className="muted small" style={{ marginTop: 3 }}>
-              Email is collected after value is shown. High-savings reports get
-              a Credex follow-up.
-            </p>
-            {/* honeypot */}
+            <div className="lead-form-header">
+              <h3>Save this report</h3>
+              <p className="muted small" style={{ marginTop: 4 }}>
+                Email is collected after value is shown, not before.
+                High-savings reports get a Credex follow-up.
+              </p>
+            </div>
+
+            {/* Honeypot */}
             <div className="hp-field" aria-hidden="true">
-              <label htmlFor="hp-website">Website</label>
+              <label htmlFor="hp-site">Website</label>
               <input
-                id="hp-website"
+                id="hp-site"
                 name="website"
                 tabIndex={-1}
                 autoComplete="off"
               />
             </div>
+
             <div className="lead-grid">
               <div className="field">
                 <label htmlFor="lead-email">Email *</label>
@@ -672,7 +688,7 @@ export default function HomePage() {
                 <input
                   id="lead-role"
                   name="role"
-                  placeholder="Founder, Eng Lead…"
+                  placeholder="Founder, Eng Lead..."
                 />
               </div>
               <div className="field">
@@ -686,6 +702,7 @@ export default function HomePage() {
                 />
               </div>
             </div>
+
             <div className="actions">
               <button className="primary" type="submit">
                 Send report
@@ -693,10 +710,7 @@ export default function HomePage() {
               {audit.leadTier === "high" && (
                 <a
                   className="secondary"
-                  href={
-                    process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ??
-                    "https://credex.rocks"
-                  }
+                  href={BOOKING}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -705,7 +719,7 @@ export default function HomePage() {
               )}
             </div>
             {leadMsg && (
-              <p className="small muted" style={{ marginTop: 10 }}>
+              <p className="small muted" style={{ marginTop: 9 }}>
                 {leadMsg}
               </p>
             )}
