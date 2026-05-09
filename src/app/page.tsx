@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CheckCircle2, Copy, Plus, Trash2 } from "lucide-react";
+import { BarChart3, Copy, Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { currency } from "@/lib/format";
 import {
@@ -20,7 +20,7 @@ type ToolRow = {
 };
 type FormState = { teamSize: number; useCase: string; tools: ToolRow[] };
 
-const defaultState: FormState = {
+const DEFAULT: FormState = {
   teamSize: 6,
   useCase: "coding",
   tools: [
@@ -30,16 +30,24 @@ const defaultState: FormState = {
 };
 
 export default function HomePage() {
-  const [form, setForm] = useState<FormState>(() => {
-    if (typeof window === "undefined") return defaultState;
-    const saved = window.localStorage.getItem("spendlens-form");
-    if (!saved) return defaultState;
+  const [form, setForm] = useState<FormState>(DEFAULT);
+  const [mounted, setMounted] = useState(false);
+
+  // Load from localStorage only after mount — fixes hydration mismatch
+  useEffect(() => {
+    setMounted(true);
     try {
-      return JSON.parse(saved);
+      const saved = localStorage.getItem("spendlens-form");
+      if (saved) setForm(JSON.parse(saved));
     } catch {
-      return defaultState;
+      /* ignore */
     }
-  });
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    if (mounted) localStorage.setItem("spendlens-form", JSON.stringify(form));
+  }, [form, mounted]);
 
   const [remoteSummary, setRemoteSummary] = useState<{
     key: string;
@@ -47,9 +55,9 @@ export default function HomePage() {
     source: string;
   } | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [leadMessage, setLeadMessage] = useState("");
+  const [leadMsg, setLeadMsg] = useState("");
   const [copied, setCopied] = useState(false);
-  const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const audit = useMemo(() => runAudit(form), [form]);
   const auditKey = useMemo(() => JSON.stringify(audit), [audit]);
@@ -57,25 +65,25 @@ export default function HomePage() {
     remoteSummary?.key === auditKey
       ? remoteSummary.text
       : fallbackSummary(audit);
+
+  // Build shareUrl only client-side — no SSR mismatch
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
   const publicId = useMemo(
     () => encodeAuditId(makePublicAuditPayload(audit)),
     [audit],
   );
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/audit/${publicId}`
-      : `/audit/${publicId}`;
+  const shareUrl = origin
+    ? `${origin}/audit/${publicId}`
+    : `/audit/${publicId}`;
 
-  // Persist form
+  // Debounced AI summary
   useEffect(() => {
-    window.localStorage.setItem("spendlens-form", JSON.stringify(form));
-  }, [form]);
-
-  // Debounced AI summary fetch — 800ms after last change
-  useEffect(() => {
-    if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
     setSummaryLoading(true);
-    summaryTimerRef.current = setTimeout(async () => {
+    timerRef.current = setTimeout(async () => {
       try {
         const res = await fetch("/api/summary", {
           method: "POST",
@@ -94,18 +102,18 @@ export default function HomePage() {
       } finally {
         setSummaryLoading(false);
       }
-    }, 800);
+    }, 900);
     return () => {
-      if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auditKey]);
 
-  function updateTool(index: number, patch: Partial<ToolRow>) {
+  function updateTool(i: number, patch: Partial<ToolRow>) {
     setForm((cur) => ({
       ...cur,
-      tools: cur.tools.map((t, i) => {
-        if (i !== index) return t;
+      tools: cur.tools.map((t, idx) => {
+        if (idx !== i) return t;
         const next = { ...t, ...patch };
         if (patch.toolId) {
           const plans = Object.keys(
@@ -121,32 +129,29 @@ export default function HomePage() {
   }
 
   function addTool() {
-    setForm((cur) => ({
-      ...cur,
+    setForm((c) => ({
+      ...c,
       tools: [
-        ...cur.tools,
+        ...c.tools,
         { toolId: "chatgpt", plan: "Team", monthlySpend: 90, seats: 3 },
       ],
     }));
   }
 
-  function removeTool(index: number) {
-    setForm((cur) => ({
-      ...cur,
-      tools: cur.tools.filter((_, i) => i !== index),
-    }));
+  function removeTool(i: number) {
+    setForm((c) => ({ ...c, tools: c.tools.filter((_, idx) => idx !== i) }));
   }
 
-  async function submitLead(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLeadMessage("Saving your report...");
-    const data = new FormData(event.currentTarget);
+  async function submitLead(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLeadMsg("Saving…");
+    const fd = new FormData(e.currentTarget);
     const payload = {
-      email: String(data.get("email") || ""),
-      company: String(data.get("company") || ""),
-      role: String(data.get("role") || ""),
-      teamSize: Number(data.get("teamSize") || form.teamSize),
-      website: String(data.get("website") || ""), // honeypot
+      email: String(fd.get("email") ?? ""),
+      company: String(fd.get("company") ?? ""),
+      role: String(fd.get("role") ?? ""),
+      teamSize: Number(fd.get("teamSize") ?? form.teamSize),
+      website: String(fd.get("website") ?? ""),
       audit,
       shareUrl,
     };
@@ -156,14 +161,14 @@ export default function HomePage() {
       body: JSON.stringify(payload),
     });
     const body = await res.json().catch(() => ({}));
-    setLeadMessage(
+    setLeadMsg(
       res.ok
-        ? body.message || "Report saved. Check your inbox."
-        : body.error || "Could not save right now.",
+        ? (body.message ?? "Saved! Check your inbox.")
+        : (body.error ?? "Could not save. Try again."),
     );
   }
 
-  async function copyShareUrl() {
+  async function copyUrl() {
     try {
       await navigator.clipboard.writeText(shareUrl);
     } catch {
@@ -173,8 +178,8 @@ export default function HomePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const severityBadge = (s: string) => {
-    const map: Record<string, string> = {
+  const badge = (s: string) => {
+    const cls: Record<string, string> = {
       high: "badge-high",
       medium: "badge-medium",
       low: "badge-low",
@@ -182,57 +187,115 @@ export default function HomePage() {
     };
     const label: Record<string, string> = {
       high: "High savings",
-      medium: "Medium savings",
-      low: "Low priority",
+      medium: "Some savings",
+      low: "Minor",
       optimal: "Optimal",
     };
     return (
-      <span className={`badge ${map[s] ?? "badge-optimal"}`}>
+      <span className={`badge ${cls[s] ?? "badge-optimal"}`}>
         {label[s] ?? s}
       </span>
     );
   };
 
+  const isOptimal = audit.totalMonthlySavings < 100;
+
   return (
     <main className="shell">
-      {/* ── Nav ── */}
+      {/* ── Topbar ── */}
       <header className="topbar">
         <div className="mark">
-          <span className="mark-dot" aria-hidden="true" /> SpendLens
+          <div className="mark-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle
+                cx="5.5"
+                cy="5.5"
+                r="4"
+                stroke="white"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="8.5"
+                y1="8.5"
+                x2="13"
+                y2="13"
+                stroke="white"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+          SpendLens
         </div>
         <nav aria-label="Primary">
-          <a href="#results">Audit</a>
+          <a href="#results">View audit</a>
+          <a href="https://credex.rocks" target="_blank" rel="noreferrer">
+            Credex
+          </a>
         </nav>
       </header>
 
-      {/* ── Hero + Form ── */}
-      <section className="hero">
+      {/* ── Hero ── */}
+      <section className="hero" id="top">
         <div className="hero-grid">
+          {/* Left — copy */}
           <div>
-            <p className="eyebrow">Free AI spend audit</p>
-            <h1>See your AI spend clearly.</h1>
+            <p className="eyebrow">Free · No login required</p>
+            <h1>
+              Find your hidden AI <em>overspend.</em>
+            </h1>
             <p className="lede">
-              SpendLens audits AI subscriptions, seats, API spend, and credit
-              opportunities so founders can see practical monthly savings before
-              paying the next invoice.
+              Enter every AI subscription, seat count, and API invoice. Get an
+              instant breakdown of what to cut, downgrade, or reroute — and
+              exactly how much you save.
             </p>
             <div className="hero-points">
               <span className="point">
-                <CheckCircle2 size={18} aria-hidden="true" /> No login before
-                value
+                <span className="point-check" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M2 5l2.5 2.5L8 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                Results shown before email is asked
               </span>
               <span className="point">
-                <CheckCircle2 size={18} aria-hidden="true" /> Public share link
-                with private details stripped
+                <span className="point-check" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M2 5l2.5 2.5L8 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                Shareable public link strips identifying details
               </span>
               <span className="point">
-                <CheckCircle2 size={18} aria-hidden="true" /> Credex surfaced
-                only when savings are meaningful
+                <span className="point-check" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M2 5l2.5 2.5L8 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                Credex only shown when savings exceed $500/mo
               </span>
             </div>
           </div>
 
-          {/* ── Input form ── */}
+          {/* Right — form */}
           <form
             className="panel form-panel"
             onSubmit={(e) => e.preventDefault()}
@@ -269,39 +332,40 @@ export default function HomePage() {
               </div>
             </div>
 
-            {form.tools.map((tool, index) => {
+            {form.tools.map((tool, idx) => {
               const plans = Object.keys(
                 (TOOLS as Record<string, { plans: Record<string, unknown> }>)[
                   tool.toolId
                 ]?.plans ?? {},
               );
               return (
-                <div className="tool-row" key={`${tool.toolId}-${index}`}>
+                <div className="tool-row" key={`${tool.toolId}-${idx}`}>
+                  <div className="tool-num">Tool {idx + 1}</div>
                   <div className="field">
-                    <label htmlFor={`tool-${index}`}>Tool</label>
+                    <label htmlFor={`tool-${idx}`}>Tool</label>
                     <select
-                      id={`tool-${index}`}
+                      id={`tool-${idx}`}
                       value={tool.toolId}
                       onChange={(e) =>
-                        updateTool(index, { toolId: e.target.value })
+                        updateTool(idx, { toolId: e.target.value })
                       }
                     >
                       {Object.entries(
                         TOOLS as Record<string, { label: string }>,
-                      ).map(([id, val]) => (
+                      ).map(([id, v]) => (
                         <option key={id} value={id}>
-                          {val.label}
+                          {v.label}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="field">
-                    <label htmlFor={`plan-${index}`}>Plan</label>
+                    <label htmlFor={`plan-${idx}`}>Plan</label>
                     <select
-                      id={`plan-${index}`}
+                      id={`plan-${idx}`}
                       value={tool.plan}
                       onChange={(e) =>
-                        updateTool(index, { plan: e.target.value })
+                        updateTool(idx, { plan: e.target.value })
                       }
                     >
                       {plans.map((p) => (
@@ -310,38 +374,38 @@ export default function HomePage() {
                     </select>
                   </div>
                   <div className="field">
-                    <label htmlFor={`spend-${index}`}>Monthly spend ($)</label>
+                    <label htmlFor={`spend-${idx}`}>Monthly ($)</label>
                     <input
-                      id={`spend-${index}`}
+                      id={`spend-${idx}`}
                       type="number"
                       min={0}
                       value={tool.monthlySpend}
                       onChange={(e) =>
-                        updateTool(index, {
+                        updateTool(idx, {
                           monthlySpend: Number(e.target.value),
                         })
                       }
                     />
                   </div>
                   <div className="field">
-                    <label htmlFor={`seats-${index}`}>Seats</label>
+                    <label htmlFor={`seats-${idx}`}>Seats</label>
                     <input
-                      id={`seats-${index}`}
+                      id={`seats-${idx}`}
                       type="number"
                       min={1}
                       value={tool.seats}
                       onChange={(e) =>
-                        updateTool(index, { seats: Number(e.target.value) })
+                        updateTool(idx, { seats: Number(e.target.value) })
                       }
                     />
                   </div>
                   <button
                     className="icon-btn"
                     type="button"
-                    onClick={() => removeTool(index)}
+                    onClick={() => removeTool(idx)}
                     aria-label={`Remove ${(TOOLS as Record<string, { label: string }>)[tool.toolId]?.label ?? tool.toolId}`}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               );
@@ -349,10 +413,14 @@ export default function HomePage() {
 
             <div className="actions">
               <button className="secondary" type="button" onClick={addTool}>
-                <Plus size={18} /> Add tool
+                <Plus size={15} aria-hidden="true" /> Add tool
               </button>
-              <a className="primary" href="#results">
-                <BarChart3 size={18} /> View audit
+              <a
+                className="primary"
+                href="#results"
+                aria-label="Scroll to audit results"
+              >
+                <BarChart3 size={15} aria-hidden="true" /> View audit
               </a>
             </div>
           </form>
@@ -362,65 +430,110 @@ export default function HomePage() {
       {/* ── Results ── */}
       <section className="section" id="results" aria-label="Audit results">
         <div className="results">
-          {/* Hero savings band */}
+          {/* Savings band */}
           <div className="summary-band">
-            <div>
+            <div className="band-left">
               <p className="eyebrow">Instant audit</p>
               <h2>
-                {audit.totalMonthlySavings < 100
+                {isOptimal
                   ? "You're spending well."
-                  : "Your practical savings estimate"}
+                  : "Practical savings estimate"}
               </h2>
-              <div className="ai-summary-label">
+              <div className="ai-label" style={{ marginTop: 0 }}>
                 {summaryLoading
                   ? "Generating analysis…"
-                  : remoteSummary?.source === "fallback" || !remoteSummary
-                    ? "Summary"
-                    : `AI analysis (${remoteSummary.source})`}
+                  : remoteSummary?.source && remoteSummary.source !== "fallback"
+                    ? `AI analysis · ${remoteSummary.source}`
+                    : "Summary"}
               </div>
-              <p className="muted">{summaryLoading ? "…" : summary}</p>
+              <p className="ai-text">
+                {summaryLoading ? (
+                  <span className="pulsing">Analysing your stack…</span>
+                ) : (
+                  summary
+                )}
+              </p>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div className="savings">
+            <div className="band-right">
+              <span
+                className="savings-num"
+                aria-label={`${currency(audit.totalMonthlySavings)} per month potential savings`}
+              >
                 {currency(audit.totalMonthlySavings)}
-              </div>
-              <p className="muted">
-                {currency(audit.totalAnnualSavings)} annualized
+              </span>
+              <p className="savings-annual">
+                {currency(audit.totalAnnualSavings)} / year
               </p>
             </div>
           </div>
 
           {/* Notice */}
           {audit.leadTier === "high" ? (
-            <div className="notice-credex">
-              <strong>Credex fit:</strong> This audit is above the $500/mo
-              savings threshold. A discounted-credit review could preserve the
-              tools you use while reducing retail API or enterprise spend
-              significantly.
+            <div className="notice-credex" role="alert">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                aria-hidden="true"
+                style={{ flexShrink: 0 }}
+              >
+                <path
+                  d="M9 3L16 15H2L9 3Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <line
+                  x1="9"
+                  y1="8"
+                  x2="9"
+                  y2="11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <circle cx="9" cy="13" r="0.75" fill="currentColor" />
+              </svg>
+              <div style={{ flex: 1 }}>
+                <strong>Credex can capture more of this.</strong> Savings above
+                $500/mo are where discounted AI credits — same tools, 15–35%
+                below retail — make a real difference.
+              </div>
               <a
                 href={
-                  process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ||
+                  process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ??
                   "https://credex.rocks"
                 }
                 target="_blank"
                 rel="noreferrer"
                 className="primary"
-                style={{ marginLeft: 12, padding: "6px 14px", fontSize: 13 }}
+                style={{
+                  fontSize: 13,
+                  height: 36,
+                  padding: "0 14px",
+                  flexShrink: 0,
+                }}
               >
-                Book a call →
+                Book credit review →
               </a>
             </div>
           ) : (
             <div className="notice">
-              <strong>Honest result:</strong> Savings below $100/mo are not
-              worth disruptive vendor churn. Use the signup below to get
-              notified when pricing or credit options change for your stack.
+              <strong>Honest result:</strong>{" "}
+              {isOptimal
+                ? "You're already spending carefully. Check back when your team size or tool mix changes."
+                : "There is a practical savings opportunity from plan right-sizing. No Credex needed at this level — these are free changes."}
             </div>
           )}
 
           {/* Per-tool breakdown */}
-          <h3 style={{ marginTop: 24 }}>Per-tool breakdown</h3>
-          <div className="breakdown" role="list">
+          <p className="section-h">Per-tool breakdown</p>
+          <div
+            className="breakdown"
+            role="list"
+            aria-label="Tool-by-tool audit"
+          >
             {(
               audit.breakdown as Array<{
                 toolId: string;
@@ -436,72 +549,100 @@ export default function HomePage() {
               }>
             ).map((row, i) => (
               <article
-                className={`breakdown-row severity-${row.severity} fade-up`}
                 key={`${row.toolId}-${i}`}
                 role="listitem"
-                style={{ animationDelay: `${i * 60}ms` }}
+                className={`breakdown-row severity-${row.severity} fade-up`}
+                style={{ animationDelay: `${i * 55}ms` }}
               >
+                {/* col 1 — tool info */}
                 <div>
-                  <h3>
-                    {row.toolLabel} {severityBadge(row.severity)}
-                  </h3>
-                  <p className="muted">
-                    {row.plan} · {row.seats} seat{row.seats === 1 ? "" : "s"} ·
-                    current {currency(row.currentMonthly)}/mo
+                  <div className="tool-header">
+                    <h3 style={{ fontSize: 14 }}>{row.toolLabel}</h3>
+                    {badge(row.severity)}
+                  </div>
+                  <p className="muted small">
+                    {row.plan} · {row.seats} seat{row.seats === 1 ? "" : "s"} ·{" "}
+                    {currency(row.currentMonthly)}/mo
                   </p>
                 </div>
+                {/* col 2 — recommendation */}
                 <div>
-                  <strong>{row.recommendation}</strong>
-                  <p className="muted">{row.reason}</p>
+                  <p className="row-rec">{row.recommendation}</p>
+                  <p className="row-reason">{row.reason}</p>
                 </div>
-                <div style={{ textAlign: "right", minWidth: 100 }}>
-                  <p className="money positive">
-                    {currency(row.monthlySavings)}/mo
+                {/* col 3 — savings */}
+                <div className="savings-col">
+                  <p
+                    className={`savings-amt ${row.monthlySavings === 0 ? "zero" : ""}`}
+                  >
+                    {row.monthlySavings === 0
+                      ? "—"
+                      : `${currency(row.monthlySavings)}/mo`}
                   </p>
-                  <p className="small muted">
-                    Recommended {currency(row.recommendedMonthly)}/mo
-                  </p>
+                  {row.monthlySavings > 0 && (
+                    <p className="savings-rec">
+                      → {currency(row.recommendedMonthly)}/mo
+                    </p>
+                  )}
                 </div>
               </article>
             ))}
           </div>
 
-          {/* Share */}
-          <div className="actions" style={{ marginTop: 20 }}>
-            <button
-              className="secondary"
-              type="button"
-              onClick={copyShareUrl}
-              aria-label="Copy shareable audit URL"
-            >
-              <Copy size={18} /> {copied ? "Copied!" : "Copy share URL"}
-            </button>
-            <a
-              className="secondary"
-              href={shareUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open public report
-            </a>
-          </div>
+          {/* Share bar */}
+          {mounted && (
+            <div className="share-row" aria-label="Share your audit">
+              <span className="share-url" title={shareUrl}>
+                {shareUrl}
+              </span>
+              <button
+                className="secondary"
+                type="button"
+                onClick={copyUrl}
+                aria-label="Copy shareable URL"
+                style={{
+                  height: 34,
+                  padding: "0 12px",
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}
+              >
+                <Copy size={13} aria-hidden="true" />
+                {copied ? "Copied!" : "Copy link"}
+              </button>
+              <a
+                className="secondary"
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  height: 34,
+                  padding: "0 12px",
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}
+              >
+                Open →
+              </a>
+            </div>
+          )}
 
           {/* Lead capture */}
           <form
             className="panel lead-form"
             onSubmit={submitLead}
-            aria-label="Save your report"
+            aria-label="Save your audit report"
           >
-            <h3>Capture this report</h3>
-            <p className="muted">
-              Email is asked after the audit, not before. High-savings reports
-              include Credex consultation context.
+            <h3>Save this report</h3>
+            <p className="muted small" style={{ marginTop: 3 }}>
+              Email is collected after value is shown. High-savings reports get
+              a Credex follow-up.
             </p>
-            {/* Honeypot — bots fill this, humans don't */}
+            {/* honeypot */}
             <div className="hp-field" aria-hidden="true">
-              <label htmlFor="website">Website</label>
+              <label htmlFor="hp-website">Website</label>
               <input
-                id="website"
+                id="hp-website"
                 name="website"
                 tabIndex={-1}
                 autoComplete="off"
@@ -509,9 +650,9 @@ export default function HomePage() {
             </div>
             <div className="lead-grid">
               <div className="field">
-                <label htmlFor="email">Email *</label>
+                <label htmlFor="lead-email">Email *</label>
                 <input
-                  id="email"
+                  id="lead-email"
                   name="email"
                   type="email"
                   required
@@ -519,17 +660,25 @@ export default function HomePage() {
                 />
               </div>
               <div className="field">
-                <label htmlFor="company">Company</label>
-                <input id="company" name="company" placeholder="Optional" />
-              </div>
-              <div className="field">
-                <label htmlFor="role">Role</label>
-                <input id="role" name="role" placeholder="Founder, Eng Lead…" />
-              </div>
-              <div className="field">
-                <label htmlFor="lead-team-size">Team size</label>
+                <label htmlFor="lead-company">Company</label>
                 <input
-                  id="lead-team-size"
+                  id="lead-company"
+                  name="company"
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="lead-role">Role</label>
+                <input
+                  id="lead-role"
+                  name="role"
+                  placeholder="Founder, Eng Lead…"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="lead-size">Team size</label>
+                <input
+                  id="lead-size"
                   name="teamSize"
                   type="number"
                   min={1}
@@ -545,19 +694,19 @@ export default function HomePage() {
                 <a
                   className="secondary"
                   href={
-                    process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ||
+                    process.env.NEXT_PUBLIC_CREDEX_BOOKING_URL ??
                     "https://credex.rocks"
                   }
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Book Credex consult
+                  Book Credex credit review
                 </a>
               )}
             </div>
-            {leadMessage && (
+            {leadMsg && (
               <p className="small muted" style={{ marginTop: 10 }}>
-                {leadMessage}
+                {leadMsg}
               </p>
             )}
           </form>
@@ -565,16 +714,23 @@ export default function HomePage() {
       </section>
 
       <footer>
-        Built for founders and engineering managers who want the invoice to make
-        sense. ·{" "}
-        <a
-          href="https://credex.rocks"
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--brand)" }}
-        >
-          Powered by Credex
-        </a>
+        <span>
+          SpendLens — free AI spend audit by{" "}
+          <a
+            href="https://credex.rocks"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "var(--brand)" }}
+          >
+            Credex
+          </a>
+        </span>
+        <span>
+          Pricing from official vendor pages ·{" "}
+          <a href="#top" style={{ color: "var(--muted)" }}>
+            Back to top
+          </a>
+        </span>
       </footer>
     </main>
   );
