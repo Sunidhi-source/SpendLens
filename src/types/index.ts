@@ -1,41 +1,74 @@
 export type ToolId =
   | "cursor"
-  | "github_copilot"
+  | "copilot"
   | "claude"
   | "chatgpt"
-  | "anthropic_api"
-  | "openai_api"
+  | "anthropicApi"
+  | "openaiApi"
   | "gemini"
   | "windsurf";
 
 export type UseCase = "coding" | "writing" | "data" | "research" | "mixed";
+export type LeadTier = "high" | "medium" | "low";
+export type Severity = "high" | "medium" | "low" | "optimal";
 
-export interface ToolEntry {
-  toolId: ToolId;
+export interface ToolRow {
+  toolId: string;
   plan: string;
-  monthlySpend: number; // USD, total (not per seat)
+  monthlySpend: number;
   seats: number;
 }
 
 export interface AuditInput {
-  tools: ToolEntry[];
   teamSize: number;
-  useCase: UseCase;
+  useCase: string;
+  tools: ToolRow[];
 }
 
-export interface ToolRecommendation {
-  toolId: ToolId;
-  toolName: string;
-  currentSpend: number;
-  recommendedAction: string;
-  reason: string;
+export interface BreakdownRow {
+  toolId: string;
+  toolLabel: string;
+  plan: string;
+  seats: number;
+  currentMonthly: number;
+  recommendation: string;
+  recommendedMonthly: number;
   monthlySavings: number;
+  reason: string;
+  severity: Severity;
 }
 
 export interface AuditResult {
-  recommendations: ToolRecommendation[];
+  input: AuditInput;
+  generatedAt: string;
+  totalCurrentMonthly: number;
+  totalRecommendedMonthly: number;
   totalMonthlySavings: number;
   totalAnnualSavings: number;
-  aiSummary?: string;
-  isOptimal: boolean;
+  leadTier: LeadTier;
+  verdict: string;
+  breakdown: BreakdownRow[];
+}
+
+export interface PublicAuditPayload {
+  v: number;
+  generatedAt: string;
+  input: AuditInput;
+  totals: {
+    current: number;
+    recommended: number;
+    monthlySavings: number;
+    annualSavings: number;
+    leadTier: LeadTier;
+  };
+  breakdown: Pick<
+    BreakdownRow,
+    | "toolLabel"
+    | "plan"
+    | "currentMonthly"
+    | "recommendation"
+    | "recommendedMonthly"
+    | "monthlySavings"
+    | "reason"
+  >[];
 }
