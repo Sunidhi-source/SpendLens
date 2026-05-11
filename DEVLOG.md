@@ -119,3 +119,31 @@ Indie Hackers and one Slack community tomorrow. Also need to deploy.
 **Plan for tomorrow:**
 Deploy to Vercel, wire Supabase in prod, run Lighthouse. Fix anything that
 drops below 85/90/90. Run interview 2.
+
+## Day 5 — 11 May 2026
+
+**Hours worked:** 5
+
+**What I did:**
+Deployed to Vercel. First deploy failed because NEXT_PUBLIC_CREDEX_BOOKING_URL
+was not in the Vercel project settings — the build succeeded but the client
+received undefined. Fixed by adding env vars in the Vercel dashboard and
+redeploying. Ran Lighthouse on the deployed URL: Performance 91, Accessibility
+88, Best Practices 95. Accessibility was two points short of the 90 target.
+Fixed: missing aria-labels on icon-only buttons, improved focus ring contrast
+ratio, added lang="en" to the html element. Re-ran: 93 Accessibility. Wired
+real Supabase project and tested lead storage — one lead inserted, one
+Resend confirmation email received. Ran interview 2 (see USER_INTERVIEWS.md).
+
+**What I learned:**
+aria-label on an icon-only button is not optional. The Lighthouse Accessibility
+audit flagged three buttons that only had an icon as content with no label —
+the Trash2 and Copy icons in the form. Easy fix, significant impact on score.
+
+**Blockers / what I'm stuck on:**
+Interview 3 still needed. REFLECTION.md questions 2–5 still mostly drafts.
+DEVLOG Day 6–7 also pending. Plan to finish those tomorrow and Sunday.
+
+**Plan for tomorrow:**
+Run interview 3. Finish REFLECTION.md. Add TESTS.md. Final pass on all files.
+Consider attempting PDF export bonus if time allows.
