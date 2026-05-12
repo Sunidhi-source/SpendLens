@@ -147,3 +147,34 @@ DEVLOG Day 6–7 also pending. Plan to finish those tomorrow and Sunday.
 **Plan for tomorrow:**
 Run interview 3. Finish REFLECTION.md. Add TESTS.md. Final pass on all files.
 Consider attempting PDF export bonus if time allows.
+
+## Day 6 — 12 May 2026
+
+**Hours worked:** 3.5
+
+**What I did:**
+Completed interview 3 (Indie Hackers cold DM — see USER_INTERVIEWS.md).
+Added 2 more audit-engine tests bringing the total to 8, all passing. Wrote
+TESTS.md. Wrote the first complete draft of REFLECTION.md — questions 2
+through 5. Did a final UI pass: the savings number was readable but not
+impressive at the size it was. Increased it and added a subtle colour
+treatment so it reads as the hero element on the screenshot. Also noticed
+the fallback summary had a hardcoded $0 edge case when all tools were
+optimal — fixed that with a proper message.
+
+**What I learned:**
+Interview 3 was the most useful of the three. The person — a solo founder
+running a small coding assistant business — said the tool was "actually
+honest, which is unusual." That phrasing confirmed the "don't manufacture
+savings" design decision was worth it. She also said she'd share it with her
+Slack community, which is exactly the organic loop the share URL is designed
+for.
+
+**Blockers / what I'm stuck on:**
+REFLECTION questions 2 and 3 still need one more pass — they read too
+generic. Will tighten tomorrow. Also want to verify PRICING_DATA.md dates
+are exactly right before final submission.
+
+**Plan for tomorrow:**
+Final review of all 12 markdown files. Run tests one more time locally.
+Verify deployed URL is live. Re-run Lighthouse. Submit.
