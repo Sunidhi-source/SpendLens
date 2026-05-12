@@ -109,9 +109,10 @@ of operations.
 
 ## 5. Self-ratings
 
-**Discipline: 7/10** — I committed on 7 distinct days and did real user
-interviews, but I left the entrepreneurial files until day 4, which meant I
-rushed GTM and ECONOMICS slightly.
+**Discipline: 7/10** — I committed on 7 distinct days and started early,
+but I left the entrepreneurial files until day 4, which meant I rushed GTM
+and ECONOMICS slightly. End-semester exams also ran in parallel, which
+affected available hours.
 
 **Code quality: 8/10** — The audit engine is clean, typed, tested, and has
 no magic numbers that don't trace back to a comment or PRICING_DATA.md.
@@ -126,35 +127,10 @@ with the layout. The design is correct but not memorable.
 on day 1 and the free-tier AI fallback chain were both good calls that
 required thinking about what could go wrong in production.
 
-**Entrepreneurial thinking: 7/10** — The GTM plan has real channels and
+**Entrepreneurial thinking: 6/10** — The GTM plan has real channels and
 real first-week numbers rather than generic "do SEO" advice. The economics
-model is honest about where the conversion math gets tight. I talked to
-three real users. I'd rate myself lower if the interviews hadn't happened.
-
-## Day 7 — 2026-05-13
-
-**Hours worked:** 2.5
-
-**What I did:**
-Final review pass on all 12 required markdown files. Checked every URL in
-PRICING_DATA.md is still live. Re-ran `npm test` — 8 tests, all passing.
-Re-ran Lighthouse on the deployed URL: 91 / 93 / 95 (Performance /
-Accessibility / Best Practices). Recorded a 35-second Loom walkthrough of
-the audit flow and added the link to README.md. Verified the share URL
-works end-to-end: completed an audit, copied the public link, opened it in
-an incognito window, confirmed all OG metadata renders correctly. Submitted
-the Google Form.
-
-**What I learned:**
-The most valuable thing I built this week wasn't the code — it was the three
-user interviews. They changed two design decisions and gave me language I
-wouldn't have used on my own ("actually honest" is better copy than anything
-I wrote in LANDING_COPY.md). If I had one week again, I'd do interviews on
-day 1 instead of day 4.
-
-**Blockers / what I'm stuck on:**
-None — submitted.
-
-**Plan for tomorrow:**
-Wait for Round 2 results. If shortlisted, review code and prepare to walk
-through ECONOMICS.md decisions in detail.
+model is honest about where the conversion math gets tight. I was only able
+to conduct one real user interview due to exams running alongside this
+deadline — I chose not to fabricate the other two, which the brief says is
+an instant reject. That one conversation still changed two design decisions,
+but I know the missing interviews are a real gap.

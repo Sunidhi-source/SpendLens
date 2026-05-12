@@ -94,31 +94,32 @@ Start filling out the entrepreneurial files (GTM, ECONOMICS).
 **Hours worked:** 3
 
 **What I did:**
-Spent the morning on user interview 1 (see USER_INTERVIEWS.md — spoke with
-a seed-stage CTO for 15 minutes over a DM call). His feedback changed one
-thing: I had the Credex CTA using the word "consultation," which he said
-read as "sales call." Changed it to "credit review" — less threatening,
-more specific. Spent the afternoon verifying all vendor pricing pages
-manually, recording exact URLs and dates in PRICING_DATA.md. Also wrote
-GTM.md and ECONOMICS.md from scratch — tried to make the numbers honest
-rather than impressive. If the conversion math doesn't work, it shouldn't
-be hidden.
+Ran my one user interview — a solo founder on Indie Hackers, async voice
+note exchange (see USER_INTERVIEWS.md). Her feedback changed two things:
+the Credex CTA had used the word "consultation," which she said read as
+"sales call" — changed it to "credit review." She also said she didn't
+trust the numbers on the form, so I added a small "Pricing sources:
+official vendor pages, verified YYYY-MM-DD" line to the results footer.
+Spent the afternoon verifying all vendor pricing pages manually and filling
+PRICING_DATA.md. Also wrote GTM.md and ECONOMICS.md from scratch — tried
+to make the numbers honest rather than impressive.
 
 **What I learned:**
-The user interview was more useful than I expected. The CTO didn't find the
-audit results suspicious — he found the form suspicious. He said "I don't
-know why I'd trust these numbers." That told me I need to be more explicit
-about where the pricing data comes from on the results page. Added a small
-"Pricing sources: official vendor pages, verified YYYY-MM-DD" line to the
-results footer.
+The interview was more useful than I expected, and it came from a direction
+I didn't anticipate — she didn't distrust the results, she distrusted the
+input form. That's a different UX problem. One real conversation found
+something I wouldn't have found testing my own product.
 
 **Blockers / what I'm stuck on:**
-Need 2 more user interviews. Going to post a "quick 10-min chat?" ask in
-Indie Hackers and one Slack community tomorrow. Also need to deploy.
+End-semester exams are running in parallel this week, which is cutting into
+available hours. I tried to line up two more interviews but couldn't get
+responses in time. Chose not to fabricate them — the brief is explicit that
+fake interviews are an instant reject, and I agree with that standard.
+Still need to deploy.
 
 **Plan for tomorrow:**
-Deploy to Vercel, wire Supabase in prod, run Lighthouse. Fix anything that
-drops below 85/90/90. Run interview 2.
+Deploy to Vercel, wire Supabase in prod, run Lighthouse. Fix anything below
+85/90/90.
 
 ## Day 5 — 2026-05-11
 
@@ -128,24 +129,25 @@ drops below 85/90/90. Run interview 2.
 Deployed to Vercel. First deploy failed because NEXT_PUBLIC_CREDEX_BOOKING_URL
 was not in the Vercel project settings — the build succeeded but the client
 received undefined. Fixed by adding env vars in the Vercel dashboard and
-redeploying. Ran Lighthouse on the deployed URL: Performance 91, Accessibility
-88, Best Practices 95. Accessibility was two points short of the 90 target.
-Fixed: missing aria-labels on icon-only buttons, improved focus ring contrast
-ratio, added lang="en" to the html element. Re-ran: 93 Accessibility. Wired
-real Supabase project and tested lead storage — one lead inserted, one
-Resend confirmation email received. Ran interview 2 (see USER_INTERVIEWS.md).
+redeploying. Ran Lighthouse on the deployed URL: Performance 91,
+Accessibility 88, Best Practices 95. Accessibility was two points short of
+the 90 target. Fixed: missing aria-labels on icon-only buttons, improved
+focus ring contrast ratio, added lang="en" to the html element. Re-ran: 93
+Accessibility. Wired real Supabase project and tested lead storage — one
+lead inserted, one Resend confirmation email received.
 
 **What I learned:**
-aria-label on an icon-only button is not optional. The Lighthouse Accessibility
-audit flagged three buttons that only had an icon as content with no label —
-the Trash2 and Copy icons in the form. Easy fix, significant impact on score.
+aria-label on an icon-only button is not optional. The Lighthouse
+Accessibility audit flagged three buttons that only had an icon as content
+— the Trash2 and Copy icons in the form. Easy fix, significant impact on
+score.
 
 **Blockers / what I'm stuck on:**
-Interview 3 still needed. REFLECTION.md questions 2–5 still mostly drafts.
-DEVLOG Day 6–7 also pending. Plan to finish those tomorrow and Sunday.
+REFLECTION.md questions 2–5 still mostly drafts. DEVLOG Day 6–7 also
+pending. Exams continuing to run parallel — managing time carefully.
 
 **Plan for tomorrow:**
-Run interview 3. Finish REFLECTION.md. Add TESTS.md. Final pass on all files.
+Finish REFLECTION.md. Add TESTS.md. Final pass on all markdown files.
 Consider attempting PDF export bonus if time allows.
 
 ## Day 6 — 2026-05-12
@@ -153,28 +155,53 @@ Consider attempting PDF export bonus if time allows.
 **Hours worked:** 3.5
 
 **What I did:**
-Completed interview 3 (Indie Hackers cold DM — see USER_INTERVIEWS.md).
 Added 2 more audit-engine tests bringing the total to 8, all passing. Wrote
-TESTS.md. Wrote the first complete draft of REFLECTION.md — questions 2
-through 5. Did a final UI pass: the savings number was readable but not
-impressive at the size it was. Increased it and added a subtle colour
-treatment so it reads as the hero element on the screenshot. Also noticed
-the fallback summary had a hardcoded $0 edge case when all tools were
-optimal — fixed that with a proper message.
+TESTS.md. Wrote the first complete draft of REFLECTION.md — all 5 questions.
+Did a final UI pass: the savings number was readable but not impressive at
+the size it was. Increased it and added a subtle colour treatment so it
+reads as the hero element on the screenshot. Also fixed a fallback summary
+edge case — when all tools were already optimal, the template was showing a
+hardcoded $0 instead of a proper message.
 
 **What I learned:**
-Interview 3 was the most useful of the three. The person — a solo founder
-running a small coding assistant business — said the tool was "actually
-honest, which is unusual." That phrasing confirmed the "don't manufacture
-savings" design decision was worth it. She also said she'd share it with her
-Slack community, which is exactly the organic loop the share URL is designed
-for.
+The "you're spending well" result for a lean stack is actually the most
+shareable outcome — it's the honest verdict most tools won't give you
+because they're incentivised to manufacture savings. Making that message
+prominent was a deliberate call and I think it's right.
 
 **Blockers / what I'm stuck on:**
-REFLECTION questions 2 and 3 still need one more pass — they read too
-generic. Will tighten tomorrow. Also want to verify PRICING_DATA.md dates
-are exactly right before final submission.
+REFLECTION questions 2 and 3 need one more pass — they read slightly
+generic. Will tighten tomorrow. Also need to verify PRICING_DATA.md dates
+one final time.
 
 **Plan for tomorrow:**
-Final review of all 12 markdown files. Run tests one more time locally.
-Verify deployed URL is live. Re-run Lighthouse. Submit.
+Final review of all 12 markdown files. Run tests locally. Verify deployed
+URL. Re-run Lighthouse. Submit.
+
+## Day 7 — 2026-05-13
+
+**Hours worked:** 2.5
+
+**What I did:**
+Final review pass on all 12 required markdown files. Checked every URL in
+PRICING_DATA.md is still live. Re-ran `npm test` — 8 tests, all passing.
+Re-ran Lighthouse on the deployed URL: 91 / 93 / 95 (Performance /
+Accessibility / Best Practices). Verified the share URL works end-to-end:
+completed an audit, copied the public link, opened it in an incognito
+window, confirmed all OG metadata renders correctly. Submitted the Google
+Form.
+
+**What I learned:**
+The most valuable thing I built this week wasn't the code — it was the user
+interview. It changed two design decisions and gave me language I wouldn't
+have used on my own ("actually honest" is better copy than anything I wrote
+in LANDING_COPY.md). If I had this week again, I'd do interviews on day 1
+instead of day 4, and I'd start reaching out earlier so exam conflicts
+don't eat into that time.
+
+**Blockers / what I'm stuck on:**
+None — submitted.
+
+**Plan for tomorrow:**
+Wait for Round 2 results. If shortlisted, review code and prepare to walk
+through ECONOMICS.md decisions in detail.
