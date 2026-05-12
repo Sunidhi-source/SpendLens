@@ -13,15 +13,15 @@
     "@supabase/supabase-js": "^2.105.3",
     "lucide-react": "^1.14.0",
     "nanoid": "^5.1.11",
-    "next": "16.2.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "next": "^15.5.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "resend": "^6.12.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -35,7 +35,28 @@
   },
   "jest": {
     "preset": "ts-jest",
-    "testEnvironment": "jsdom",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [
+      ".ts",
+      ".mjs"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.mjs$": "$1.mjs"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ],
+      "^.+\\.mjs$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    },
     "passWithNoTests": true
   }
 }
