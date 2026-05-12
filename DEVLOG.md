@@ -1,4 +1,4 @@
-## Day 1 — 7 May 2026
+## Day 1 — 2026-05-07
 
 **Hours worked:** 4
 
@@ -28,7 +28,7 @@ week — going to DM founders tomorrow.
 Build the form UI and results page. Wire localStorage persistence. Get the
 full user-facing flow working end-to-end so I can test it with real inputs.
 
-## Day 2 — 8 May 2026
+## Day 2 — 2026-05-08
 
 **Hours worked:** 3.5
 
@@ -58,7 +58,7 @@ Build /api/summary (AI-generated summary with fallback), build /api/leads
 (Supabase + Resend), and add the public /audit/[id] share page. Then try
 to do the first user interview.
 
-## Day 3 — 9 May 2026
+## Day 3 — 2026-05-09
 
 **Hours worked:** 4
 
@@ -89,7 +89,7 @@ is done. First user interview is booked for tomorrow morning.
 Run first user interview. Write PRICING_DATA.md with real verified dates.
 Start filling out the entrepreneurial files (GTM, ECONOMICS).
 
-## Day 4 — 10 may 2026
+## Day 4 — 2026-05-10
 
 **Hours worked:** 3
 
@@ -120,7 +120,7 @@ Indie Hackers and one Slack community tomorrow. Also need to deploy.
 Deploy to Vercel, wire Supabase in prod, run Lighthouse. Fix anything that
 drops below 85/90/90. Run interview 2.
 
-## Day 5 — 11 May 2026
+## Day 5 — 2026-05-11
 
 **Hours worked:** 5
 
@@ -148,7 +148,7 @@ DEVLOG Day 6–7 also pending. Plan to finish those tomorrow and Sunday.
 Run interview 3. Finish REFLECTION.md. Add TESTS.md. Final pass on all files.
 Consider attempting PDF export bonus if time allows.
 
-## Day 6 — 12 May 2026
+## Day 6 — 2026-05-12
 
 **Hours worked:** 3.5
 
