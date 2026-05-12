@@ -1,5 +1,3 @@
-import test from "node:test";
-import assert from "node:assert/strict";
 import {
   runAudit,
   fallbackSummary,
@@ -8,18 +6,18 @@ import {
   makePublicAuditPayload,
 } from "../src/lib/audit-engine.mjs";
 
-test("right-sizes Claude Team below the 5-seat minimum", () => {
+it("right-sizes Claude Team below the 5-seat minimum", () => {
   const audit = runAudit({
     teamSize: 2,
     useCase: "writing",
     tools: [{ toolId: "claude", plan: "Team", monthlySpend: 150, seats: 2 }],
   });
-  assert.equal(audit.totalMonthlySavings, 110);
-  assert.match(audit.breakdown[0].recommendation, /Claude Pro/);
-  assert.equal(audit.breakdown[0].severity, "high");
+  expect(audit.totalMonthlySavings).toBe(110);
+  expect(audit.breakdown[0].recommendation).toMatch(/Claude Pro/);
+  expect(audit.breakdown[0].severity).toBe("high");
 });
 
-test("classifies as high-tier lead when API savings exceed $500/mo", () => {
+it("classifies as high-tier lead when API savings exceed $500/mo", () => {
   const audit = runAudit({
     teamSize: 12,
     useCase: "mixed",
@@ -27,22 +25,22 @@ test("classifies as high-tier lead when API savings exceed $500/mo", () => {
       { toolId: "openaiApi", plan: "API direct", monthlySpend: 2600, seats: 1 },
     ],
   });
-  assert.equal(audit.leadTier, "high");
-  assert.ok(audit.totalMonthlySavings > 500);
-  assert.match(audit.breakdown[0].recommendation, /credits/i);
+  expect(audit.leadTier).toBe("high");
+  expect(audit.totalMonthlySavings).toBeGreaterThan(500);
+  expect(audit.breakdown[0].recommendation).toMatch(/credits/i);
 });
 
-test("does not manufacture savings for an already lean Cursor Pro stack", () => {
+it("does not manufacture savings for an already lean Cursor Pro stack", () => {
   const audit = runAudit({
     teamSize: 1,
     useCase: "coding",
     tools: [{ toolId: "cursor", plan: "Pro", monthlySpend: 20, seats: 1 }],
   });
-  assert.equal(audit.totalMonthlySavings, 0);
-  assert.equal(audit.leadTier, "low");
+  expect(audit.totalMonthlySavings).toBe(0);
+  expect(audit.leadTier).toBe("low");
 });
 
-test("recommends Gemini Ultra downgrade for non-research use case", () => {
+it("recommends Gemini Ultra downgrade for non-research use case", () => {
   const audit = runAudit({
     teamSize: 3,
     useCase: "writing",
@@ -50,12 +48,12 @@ test("recommends Gemini Ultra downgrade for non-research use case", () => {
       { toolId: "gemini", plan: "Ultra", monthlySpend: 749.97, seats: 3 },
     ],
   });
-  assert.ok(audit.totalMonthlySavings > 600);
-  assert.match(audit.breakdown[0].recommendation, /Pro/i);
-  assert.equal(audit.breakdown[0].severity, "high");
+  expect(audit.totalMonthlySavings).toBeGreaterThan(600);
+  expect(audit.breakdown[0].recommendation).toMatch(/Pro/i);
+  expect(audit.breakdown[0].severity).toBe("high");
 });
 
-test("flags Cursor Enterprise as overkill below 20 seats", () => {
+it("flags Cursor Enterprise as overkill below 20 seats", () => {
   const audit = runAudit({
     teamSize: 8,
     useCase: "coding",
@@ -63,11 +61,11 @@ test("flags Cursor Enterprise as overkill below 20 seats", () => {
       { toolId: "cursor", plan: "Enterprise", monthlySpend: 800, seats: 8 },
     ],
   });
-  assert.ok(audit.totalMonthlySavings > 400);
-  assert.equal(audit.breakdown[0].severity, "high");
+  expect(audit.totalMonthlySavings).toBeGreaterThan(400);
+  expect(audit.breakdown[0].severity).toBe("high");
 });
 
-test("recommends cancelling Copilot when use case is not coding", () => {
+it("recommends cancelling Copilot when use case is not coding", () => {
   const audit = runAudit({
     teamSize: 5,
     useCase: "writing",
@@ -75,11 +73,11 @@ test("recommends cancelling Copilot when use case is not coding", () => {
       { toolId: "copilot", plan: "Business", monthlySpend: 95, seats: 5 },
     ],
   });
-  assert.equal(audit.totalMonthlySavings, 95);
-  assert.equal(audit.breakdown[0].severity, "high");
+  expect(audit.totalMonthlySavings).toBe(95);
+  expect(audit.breakdown[0].severity).toBe("high");
 });
 
-test("public audit payload strips input and round-trips via encode/decode", () => {
+it("public audit payload strips input and round-trips via encode/decode", () => {
   const audit = runAudit({
     teamSize: 4,
     useCase: "mixed",
@@ -88,13 +86,13 @@ test("public audit payload strips input and round-trips via encode/decode", () =
   const payload = makePublicAuditPayload(audit);
   const encoded = encodeAuditId(payload);
   const decoded = decodeAuditId(encoded);
-  assert.equal(decoded.input.teamSize, 4);
-  assert.equal(decoded.input.email, undefined);
-  assert.equal(decoded.input.company, undefined);
-  assert.ok(decoded.totals.monthlySavings >= 0);
+  expect(decoded.input.teamSize).toBe(4);
+  expect(decoded.input.email).toBeUndefined();
+  expect(decoded.input.company).toBeUndefined();
+  expect(decoded.totals.monthlySavings).toBeGreaterThanOrEqual(0);
 });
 
-test("annual savings is exactly 12× monthly savings", () => {
+it("annual savings is exactly 12× monthly savings", () => {
   const audit = runAudit({
     teamSize: 10,
     useCase: "coding",
@@ -108,8 +106,7 @@ test("annual savings is exactly 12× monthly savings", () => {
       },
     ],
   });
-  assert.equal(
-    audit.totalAnnualSavings,
+  expect(audit.totalAnnualSavings).toBe(
     Math.round(audit.totalMonthlySavings * 12 * 100) / 100,
   );
 });
