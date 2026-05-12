@@ -3,10 +3,13 @@ import Link from "next/link";
 import { decodeAuditId } from "@/lib/audit-engine.mjs";
 import { currency } from "@/lib/format";
 
-type PageProps = { params: { id: string } };
+type PageProps = { params: Promise<{ id: string }> };
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const payload = decodeAuditId(params.id);
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const payload = decodeAuditId(id);
   const savings = payload?.totals?.monthlySavings || 0;
   const title =
     savings > 0
@@ -29,8 +32,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function PublicAuditPage({ params }: PageProps) {
-  const payload = decodeAuditId(params.id);
+export default async function PublicAuditPage({ params }: PageProps) {
+  const { id } = await params;
+  const payload = decodeAuditId(id);
 
   if (!payload) {
     return (
